@@ -1,0 +1,138 @@
+table,field,type,required,allowed_values,unit,uniqueness,validation_rule
+Product,product_id,TEXT,yes,,identifier,primary key,matches PRD-#####
+Product,sku,TEXT,yes,,identifier,unique,non-empty
+Product,category_l1,TEXT,yes,,label,no,known taxonomy
+Product,category_l2,TEXT,yes,,label,no,known subcategory
+Product,list_price,NUMERIC,yes,,currency,no,greater than 0
+Product,unit_cost,NUMERIC,yes,,currency,no,nonnegative and <= list_price
+Product,launch_date,TEXT,yes,,ISO date,no,valid date
+Product,discontinued_date,TEXT,no,,ISO date,no,null or >= launch_date
+Customer,customer_id,TEXT,yes,,identifier,primary key,matches CUS-######
+Customer,signup_date,TEXT,yes,,ISO date,no,valid date
+Customer,country,TEXT,yes,,ISO country,no,non-empty
+Customer,region,TEXT,yes,,label,no,non-empty
+Customer,age_band,TEXT,yes,,band,no,configured band
+Customer,acquisition_channel,TEXT,yes,,channel,no,configured channel
+Customer,preferred_channel,TEXT,yes,,channel,no,configured channel
+Customer,tier,TEXT,yes,STANDARD|PLUS|PREMIUM,label,no,allowed enum
+Customer,lifecycle_state,TEXT,yes,NEW|ACTIVE|DORMANT|CHURNED|SUPPRESSED,state,no,allowed enum
+Customer,synthetic_email_token,TEXT,yes,,token,unique,synthetic token only
+Customer,is_test_account,INTEGER,yes,0|1,boolean,no,boolean
+SegmentRule,segment_id,TEXT,yes,,identifier,primary key,matches SEG-YYYY-######
+SegmentRule,segment_name,TEXT,yes,,label,unique,non-empty
+SegmentRule,exclusive_group,TEXT,no,LIFECYCLE|blank,label,no,configured group
+SegmentRule,priority,INTEGER,yes,,rank,no,positive integer
+SegmentRule,rule_expression,TEXT,yes,,text,no,human-readable expression
+SegmentRule,rule_version,TEXT,yes,,version,no,non-empty
+SegmentRule,effective_from,TEXT,yes,,ISO date,no,valid date
+SegmentRule,effective_to,TEXT,no,,ISO date,no,null or after effective_from
+ActionCatalog,action_code,TEXT,yes,,code,primary key,AC-xxx natural code
+ActionCatalog,channel,TEXT,yes,EMAIL|SMS|PUSH|PHONE,channel,no,allowed channel
+ActionCatalog,purpose,TEXT,yes,MARKETING|SERVICE,purpose,no,allowed enum
+ActionCatalog,cooldown_days,INTEGER,yes,,days,no,nonnegative
+ActionCatalog,unit_cost,NUMERIC,yes,,currency,no,nonnegative
+ActionCatalog,requires_consent_channel,TEXT,no,EMAIL|SMS|PUSH|PHONE,channel,no,nullable for service
+ActionCatalog,active_flag,INTEGER,yes,0|1,boolean,no,boolean
+OrderHeader,order_id,TEXT,yes,,identifier,primary key,matches ORD-YYYY-######
+OrderHeader,customer_id,TEXT,yes,,identifier,foreign key,exists in Customer
+OrderHeader,order_ts,TEXT,yes,,ISO timestamp,no,within history window and >= signup
+OrderHeader,order_type,TEXT,yes,SALE|RETURN,state,no,allowed enum
+OrderHeader,status,TEXT,yes,PLACED|SHIPPED|DELIVERED|CANCELLED|RETURN_COMPLETED,state,no,allowed enum
+OrderHeader,currency,TEXT,yes,,currency,no,single configured currency
+OrderHeader,gross_amount,NUMERIC,yes,,currency,no,sum of line gross
+OrderHeader,discount_amount,NUMERIC,yes,,currency,no,sum of line discounts
+OrderHeader,net_amount,NUMERIC,yes,,currency,no,gross minus discount
+OrderHeader,related_order_id,TEXT,no,,identifier,foreign key,return references sale
+OrderLine,order_line_id,TEXT,yes,,identifier,primary key,matches ORL-YYYY-#######
+OrderLine,order_id,TEXT,yes,,identifier,foreign key,exists in OrderHeader
+OrderLine,product_id,TEXT,yes,,identifier,foreign key,exists in Product
+OrderLine,quantity,INTEGER,yes,,units,no,integer >= 1
+OrderLine,unit_price,NUMERIC,yes,,currency,no,nonnegative
+OrderLine,discount,NUMERIC,yes,,currency,no,nonnegative and <= gross
+OrderLine,line_total,NUMERIC,yes,,currency,no,quantity*unit_price-discount
+OrderLine,line_type,TEXT,yes,SALE|RETURN,state,no,allowed enum
+OrderLine,original_order_line_id,TEXT,no,,identifier,foreign key,required for return line
+EngagementEvent,event_id,TEXT,yes,,identifier,primary key,matches EVT-#######
+EngagementEvent,customer_id,TEXT,yes,,identifier,foreign key,exists in Customer
+EngagementEvent,action_id,TEXT,no,,identifier,foreign key,nullable action reference
+EngagementEvent,product_id,TEXT,no,,identifier,foreign key,nullable product reference
+EngagementEvent,event_type,TEXT,yes,EMAIL_SENT|EMAIL_OPEN|EMAIL_CLICK|SMS_SENT|WEB_VISIT|PRODUCT_VIEW|CART_ADD|APP_SESSION|UNSUBSCRIBE,event,no,allowed enum
+EngagementEvent,channel,TEXT,yes,EMAIL|SMS|WEB|APP|PUSH,channel,no,allowed enum
+EngagementEvent,event_ts,TEXT,yes,,ISO timestamp,no,within history window
+EngagementEvent,parent_event_id,TEXT,no,,identifier,foreign key,open/click child points to send
+SupportCase,case_id,TEXT,yes,,identifier,primary key,matches CAS-######
+SupportCase,customer_id,TEXT,yes,,identifier,foreign key,exists in Customer
+SupportCase,order_id,TEXT,no,,identifier,foreign key,same customer when present
+SupportCase,severity,TEXT,yes,LOW|MEDIUM|HIGH|CRITICAL,label,no,allowed enum
+SupportCase,status,TEXT,yes,OPEN|IN_PROGRESS|RESOLVED|CLOSED|REOPENED,state,no,allowed enum
+SupportCase,opened_at,TEXT,yes,,ISO timestamp,no,<= resolved_at <= closed_at
+SupportCase,resolved_at,TEXT,no,,ISO timestamp,no,ordered timestamp
+SupportCase,closed_at,TEXT,no,,ISO timestamp,no,ordered timestamp
+SupportCase,handle_minutes,INTEGER,yes,,minutes,no,nonnegative
+SupportCase,cost_amount,NUMERIC,yes,,currency,no,derived from severity rate
+SupportCase,csat,INTEGER,no,1|2|3|4|5,score,no,nullable 1-5
+Consent,consent_id,TEXT,yes,,identifier,primary key,matches CON-######
+Consent,customer_id,TEXT,yes,,identifier,foreign key,exists in Customer
+Consent,channel,TEXT,yes,EMAIL|SMS|PUSH|PHONE,channel,no,allowed enum
+Consent,purpose,TEXT,yes,MARKETING|SERVICE,purpose,no,allowed enum
+Consent,status,TEXT,yes,GRANTED|WITHDRAWN,state,no,allowed enum
+Consent,effective_from,TEXT,yes,,ISO timestamp,no,valid timestamp
+Consent,effective_to,TEXT,no,,ISO timestamp,no,null or after effective_from
+Consent,source,TEXT,yes,,label,no,non-empty
+SegmentMembership,membership_id,TEXT,yes,,identifier,primary key,stable membership ID
+SegmentMembership,segment_id,TEXT,yes,,identifier,foreign key,exists in SegmentRule
+SegmentMembership,customer_id,TEXT,yes,,identifier,foreign key,exists in Customer
+SegmentMembership,recency_days,INTEGER,no,,days,no,nonnegative
+SegmentMembership,frequency_12m,INTEGER,no,,orders,no,nonnegative
+SegmentMembership,monetary_net_12m,NUMERIC,no,,currency,no,derived net value
+SegmentMembership,r_score,INTEGER,no,1|2|3|4|5,score,no,R score
+SegmentMembership,f_score,INTEGER,no,1|2|3|4|5,score,no,F score
+SegmentMembership,m_score,INTEGER,no,1|2|3|4|5,score,no,M score
+SegmentMembership,rule_matched,TEXT,yes,,label,no,segment rule name
+SegmentMembership,evidence,TEXT,yes,,text,no,explainability evidence
+SegmentMembership,effective_from,TEXT,yes,,ISO date,no,valid date
+SegmentMembership,effective_to,TEXT,no,,ISO date,no,null or after effective_from
+SegmentMembership,status,TEXT,yes,ACTIVE|EXITED,state,no,allowed enum
+SegmentMembershipSnapshot,snapshot_id,TEXT,yes,,identifier,primary key,stable snapshot ID
+SegmentMembershipSnapshot,customer_id,TEXT,yes,,identifier,foreign key,exists in Customer
+SegmentMembershipSnapshot,segment_id,TEXT,yes,,identifier,foreign key,exists in SegmentRule
+SegmentMembershipSnapshot,snapshot_date,TEXT,yes,,ISO date,no,month-end or as-of date
+SegmentMembershipSnapshot,recency_days,INTEGER,yes,,days,no,nonnegative
+SegmentMembershipSnapshot,frequency_12m,INTEGER,yes,,orders,no,nonnegative
+SegmentMembershipSnapshot,monetary_net_12m,NUMERIC,yes,,currency,no,derived net value
+SegmentMembershipSnapshot,rule_matched,TEXT,yes,,label,no,segment rule name
+SegmentMembershipSnapshot,evidence,TEXT,yes,,text,no,explainability evidence
+ActionOutcome,action_outcome_id,TEXT,yes,,identifier,primary key,matches ACTN-YYYY-######
+ActionOutcome,customer_id,TEXT,yes,,identifier,foreign key,exists in Customer
+ActionOutcome,action_code,TEXT,yes,,code,foreign key,exists in ActionCatalog
+ActionOutcome,segment_id,TEXT,no,,identifier,foreign key,exists in SegmentRule
+ActionOutcome,membership_id,TEXT,no,,identifier,foreign key,exists in SegmentMembership
+ActionOutcome,recommended_at,TEXT,yes,,ISO timestamp,no,valid timestamp
+ActionOutcome,decision,TEXT,yes,RECOMMENDED|SUPPRESSED|SENT,state,no,allowed enum
+ActionOutcome,suppression_reason,TEXT,no,NO_CONSENT|FREQUENCY_CAP|COOLDOWN|OPEN_SERVICE_CASE|RECENT_RETURN_DISPUTE,reason,no,required when suppressed
+ActionOutcome,sent_at,TEXT,no,,ISO timestamp,no,required when sent
+ActionOutcome,outcome,TEXT,yes,NONE|OPENED|CLICKED|CONVERTED|UNSUBSCRIBED,state,no,allowed enum
+ActionOutcome,outcome_at,TEXT,no,,ISO timestamp,no,>= sent_at
+ActionOutcome,attributed_order_id,TEXT,no,,identifier,foreign key,attributed order
+ActionOutcome,attribution_window_days,INTEGER,no,,days,no,usually 14
+ActionOutcome,control_group_flag,INTEGER,yes,0|1,boolean,no,boolean
+SegmentMembershipEvent,membership_event_id,TEXT,yes,,identifier,primary key,stable event ID
+SegmentMembershipEvent,membership_id,TEXT,yes,,identifier,foreign key,exists in SegmentMembership
+SegmentMembershipEvent,customer_id,TEXT,yes,,identifier,foreign key,exists in Customer
+SegmentMembershipEvent,segment_id,TEXT,yes,,identifier,foreign key,exists in SegmentRule
+SegmentMembershipEvent,event_type,TEXT,yes,ENTER|EXIT,event,no,allowed enum
+SegmentMembershipEvent,event_ts,TEXT,yes,,ISO timestamp,no,valid timestamp
+CustomerStatusEvent,status_event_id,TEXT,yes,,identifier,primary key,stable event ID
+CustomerStatusEvent,customer_id,TEXT,yes,,identifier,foreign key,exists in Customer
+CustomerStatusEvent,old_status,TEXT,no,,state,no,nullable initial state
+CustomerStatusEvent,new_status,TEXT,yes,,state,no,configured lifecycle state
+CustomerStatusEvent,event_ts,TEXT,yes,,ISO timestamp,no,valid timestamp
+ConsentEvent,consent_event_id,TEXT,yes,,identifier,primary key,stable event ID
+ConsentEvent,consent_id,TEXT,yes,,identifier,foreign key,exists in Consent
+ConsentEvent,customer_id,TEXT,yes,,identifier,foreign key,exists in Customer
+ConsentEvent,event_type,TEXT,yes,GRANTED|WITHDRAWN,event,no,allowed enum
+ConsentEvent,event_ts,TEXT,yes,,ISO timestamp,no,valid timestamp
+ActionEligibilityBridge,action_code,TEXT,yes,,code,composite key,exists in ActionCatalog
+ActionEligibilityBridge,segment_id,TEXT,yes,,identifier,composite key,exists in SegmentRule
+ActionEligibilityBridge,effective_from,TEXT,yes,,ISO date,composite key,valid date
+ActionEligibilityBridge,effective_to,TEXT,no,,ISO date,no,null or after effective_from

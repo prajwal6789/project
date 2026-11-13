@@ -1,0 +1,12 @@
+seed: 20261022
+as_of_date: "2026-10-22"
+history_start: "2024-10-23"
+scales:
+  starter:
+    customers: 2000
+    orders: 8000
+    events: 40000
+  full:
+    customers: 50000
+    orders: 200000
+    events: 1000000
